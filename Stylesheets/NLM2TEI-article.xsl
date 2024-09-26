@@ -2738,11 +2738,11 @@
 <!--        </xsl:apply-templates>-->
 <!--    </xsl:template>-->
 
-<!--    <xsl:template match="back//sec[@sec-type='supplementary-material'] | back//notes[@notes-type='supplementary-material']">-->
-<!--        <div type="annex">-->
-<!--            <xsl:apply-templates/>-->
-<!--        </div>-->
-<!--    </xsl:template>-->
+    <xsl:template match="sec[@sec-type='supplementary-material'] | notes[@notes-type='supplementary-material']">
+        <div type="supplementary-material">
+            <xsl:apply-templates/>
+        </div>
+    </xsl:template>
 
 <!--    <xsl:template match="back">-->
 <!--        <xsl:param name="supplementary-content"/>-->
