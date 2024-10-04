@@ -1354,8 +1354,8 @@
                     <xsl:when test="body/* | bdy/p | bdy/sec | bdy/corres/* | article/floats-group">
                         <body>
                             <xsl:choose>
-                                <xsl:when test="body/*[not(@sec-type = 'supplementary-material')] | bdy/p | bdy/sec | bdy/corres/*">
-                                    <xsl:apply-templates select="body/* | bdy/p | bdy/sec | bdy/corres/*"/>
+                                <xsl:when test="body/* | bdy/p | bdy/sec | bdy/corres/*">
+                                    <xsl:apply-templates select="body/*[@sec-type != 'supplementary-material'] | bdy/p | bdy/sec | bdy/corres/*"/>
                                     <xsl:apply-templates select="bm/objects/*"/>
                                     <xsl:apply-templates select="//article/floats-group"/>
                                 </xsl:when>
@@ -1536,7 +1536,7 @@
                 <xsl:choose>
                     <xsl:when test="body/* | bdy/p | bdy/sec | bdy/corres/*">
                         <xsl:apply-templates
-                            select="body/*[not(@sec-type = 'supplementary-material')] | bdy/p | bdy/sec | bdy/corres/*"/>
+                            select="body/*[@sec-type != 'supplementary-material'] | bdy/p | bdy/sec | bdy/corres/*"/>
                         <xsl:apply-templates select="bm/objects/*"/>
                         <!-- SG body not containing sub tags (ex: Nature_headerDTD_E55900BEA1B96187B075C3707A439F215C3EF07C.xml)-->
                         <xsl:if test="//headerx/bdy">
