@@ -184,9 +184,26 @@ public class XSLTProcessor {
         return transform(inputStream);
     }
 
+    private void reload() {
+        LOGGER.info("Reloading XSLT Processor");
+        XsltCompiler comp = proc.newXsltCompiler();
+
+        File xsltMainFile = new File(configuration.getStylesheetsPath() + File.separator + "Publishers.xsl");
+        StreamSource xslSource = new StreamSource(xsltMainFile);
+
+        try {
+            this.compiledStyleSheets = comp.compile(xslSource);
+            // note: XsltExecutable is thread safe
+        } catch(SaxonApiException e) {
+            LOGGER.error("Fail to load stylesheets", e);
+        }
+    }
+
     public String transform(InputStream inputStream) {
         if (inputStream == null)
             return null;
+
+        reload();
 
         //Serializer out = new Serializer();
         Serializer out = proc.newSerializer();
