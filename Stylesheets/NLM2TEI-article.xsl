@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="2.0" xmlns:ce="http://www.elsevier.com/xml/common/dtd" xmlns="http://www.tei-c.org/ns/1.0"
-    xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:xd="http://www.oxygenxml.com/ns/doc/xsl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" exclude-result-prefixes="#all">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="2.0"
+                xmlns:ce="http://www.elsevier.com/xml/common/dtd"
+                xmlns="http://www.tei-c.org/ns/1.0"
+                xmlns:xlink="http://www.w3.org/1999/xlink"
+                xmlns:mml="http://www.w3.org/1998/Math/MathML"
+                xmlns:xd="http://www.oxygenxml.com/ns/doc/xsl"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xmlns:sax="http://saxon.sf.net/"
+                exclude-result-prefixes="#all">
 
     <xd:doc scope="stylesheet">
         <xd:desc>
@@ -1355,7 +1362,12 @@
         </text>
     </xsl:template>
 
-    <!-- We do not care about components from <article-meta> which are 
+    <!-- There is interesting metadata in funding-source under article/back/ack/p for PMC-XML -->
+    <xsl:template match="subj-group|alternatives|meta-name|meta-value">
+        <!-- no-op -->
+    </xsl:template>
+
+    <!-- We do not care about components from <article-meta> which are
     not explicitly addressed by means of an XPath in another template-->
     <xsl:template match="article-meta"/>
 
@@ -1537,9 +1549,9 @@
                     </xsl:if>
                     
                     <xsl:for-each select="article-meta/pub-date">
-                        <xsl:message>Current: <xsl:value-of select="@pub-type"/></xsl:message>
+<!--                        <xsl:message>Current: <xsl:value-of select="@pub-type"/></xsl:message>-->
                         <xsl:if test="year != '' and year != '0000'">
-                            <xsl:message>Pubdate year: <xsl:value-of select="year"/></xsl:message>
+<!--                            <xsl:message>Pubdate year: <xsl:value-of select="year"/></xsl:message>-->
                             <xsl:apply-templates select="."/>
                         </xsl:if>
                     </xsl:for-each>
@@ -2158,15 +2170,23 @@
         <xsl:apply-templates/>
     </xsl:template>
 
+    <!--
+    TODO: Discussion. Was: <xsl:template match="sec[not(parent::boxed-text)">
+     This is very broad - in that it catches any such section anywhere (e.g. below <body>).
+     Is that the intention?
+     It causes problems below with supplementary-materials extraction.
+     Maybe this is a candidate for kermit2:master? It merits discussion at least since it holds back our fork.
+     -->
     <!-- Macrostructure of main body if the text -->
     <xsl:template match="sec[not(parent::boxed-text)]">
+<!--                <xsl:message>sec[not(parent::boxed-text)] ran: <xsl:value-of select="."/></xsl:message>-->
                 <div>
                     <xsl:if test="@sec-type">
                         <xsl:attribute name="type">
                             <xsl:value-of select="@sec-type"/>
                         </xsl:attribute>
                     </xsl:if>
-                    
+
                     <xsl:if test="parent::boxed-text">
                         <xsl:attribute name="rend">
                             <xsl:text>boxed-text</xsl:text>
@@ -2177,14 +2197,14 @@
                             <xsl:value-of select="@id"/>
                         </xsl:attribute>
                     </xsl:if>
-                    
+
                     <xsl:if test="label">
                         <xsl:attribute name="n">
                             <xsl:value-of select="label"/>
                         </xsl:attribute>
                     </xsl:if>
-                    
-                    <!-- We treat boxed-text as independant divisions right after the current division 
+
+                    <!-- We treat boxed-text as independant divisions right after the current division
             to avoid getting a division within a paragraph by accident -->
                     <xsl:choose>
                         <xsl:when test="not(descendant::sec) and descendant::boxed-text">
@@ -2197,6 +2217,8 @@
                         </xsl:otherwise>
                     </xsl:choose>
                 </div>
+<!--            </xsl:otherwise>-->
+<!--        </xsl:choose>-->
     </xsl:template>
 
     <xsl:template match="sec[parent::boxed-text]">
@@ -2255,9 +2277,24 @@
     <xsl:template match="ack">
         <div type="acknowledgements">
             <div>
-                <xsl:apply-templates/>
+                <xsl:apply-templates />
             </div>
         </div>
+    </xsl:template>
+
+    <!--
+    PMC XML inlines the institution name within funding-source tags, where the name is a subtag.
+    The following template pulls the name out and the name if it's there.
+     -->
+    <xsl:template match="funding-source">
+        <xsl:choose>
+            <xsl:when test="institution-wrap/institution-id[@institution-id-type='doi']">
+                <xsl:value-of select="institution-wrap/institution"/> [DOI: <xsl:value-of select="institution-wrap/institution-id[@institution-id-type='doi']"/>]
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of select="institution-wrap/institution"/>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
 
     <xsl:template match="front/article-meta/custom-meta-group/custom-meta[@id='data-availability']">
@@ -2552,6 +2589,7 @@
             </div>
         </div>
     </xsl:template>
+
     <xsl:template match="back/*/sec[@sec-type='data-availability']">
         <div type="availability">
             <div>
@@ -2783,13 +2821,20 @@
 <!--        </xsl:apply-templates>-->
 <!--    </xsl:template>-->
 
-    <xsl:template match="sec[@sec-type='supplementary-material'] | notes[@notes-type='supplementary-material']">
-        <div type="supplementary-material">
-            <xsl:apply-templates/>
-        </div>
-    </xsl:template>
+    <!--
+     TODO: Discussion. Why is there such a broad XSLT match as: sec[not(parent::boxed-text)] above?
+      It is an ambiguous rule with the one below. PLoS-XML (at least) puts this below body.
+      So I introduced a restriction on sec[not(parent::boxed-text)] above. Perhaps this is a candidate for
+      kermit2:master?
+     -->
+        <xsl:template priority="2" match="sec[@sec-type='supplementary-material'] | notes[@notes-type='supplementary-material']">
+            <!--            <xsl:message>supplementary-material ran</xsl:message>-->
+            <div type="supplementary-material">
+                <xsl:apply-templates/>
+            </div>
+        </xsl:template>
 
-<!--    <xsl:template match="back">-->
+    <!--    <xsl:template match="back">-->
 <!--        <xsl:param name="supplementary-content"/>-->
 <!--        <xsl:copy>-->
 <!--            <xsl:apply-templates select="@* | node()"/>-->

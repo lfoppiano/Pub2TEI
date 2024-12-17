@@ -1,6 +1,6 @@
 version: "0.2"
 
-grobidHome: ../grobid/grobid-home
+grobidHome: ../grobid-home
 
 tmpPath: tmp/
 
@@ -23,9 +23,8 @@ consolidation:
     url: "https://cloud.science-miner.com/glutton"
     #url: "http://localhost:8080" 
   crossref:
-    mailto: 
-    # to use crossref web API, you need normally to use it politely and to indicate an email address here, e.g. 
-    mailto: "toto@titi.com"
+    # to use crossref web API, you need normally to use it politely and to indicate an email address here, e.g.
+    mailto: "info@dataseer.ai"
     token:
     # to use Crossref metadata plus service (available by subscription) for better CrossRef API performance
     #token: "yourmysteriouscrossrefmetadataplusauthorizationtokentobeputhere"
