@@ -41,7 +41,7 @@ public class XMLUtilities {
 
     private static List<String> textualElements = Arrays.asList("p", "figDesc");
     private static List<String> noSegmentationElements = Arrays.asList("listBibl", "table");
-    private static List<String> elementsWithIds = Arrays.asList("s", "p", "title", "note", "term", "keywords");
+    private static List<String> elementsWithIds = Arrays.asList("s", "p", "title", "note", "term", "keywords", "head");
 
     private static DocumentBuilderFactory factory = getReasonableDocumentBuilderFactory();
 
