@@ -1363,7 +1363,7 @@
     </xsl:template>
 
     <!-- There is interesting metadata in funding-source under article/back/ack/p for PMC-XML -->
-    <xsl:template match="subj-group|alternatives|meta-name|meta-value">
+    <xsl:template match="subj-group|alternatives|meta-name|meta-value|x[@xml:space='preserve']">
         <!-- no-op -->
     </xsl:template>
 
@@ -2750,6 +2750,7 @@
                     </xsl:otherwise>
                 </xsl:choose>
                 </xsl:variable>
+                <xsl:message>ext-link type: <xsl:value-of select="@ext-link-type"/>, URL: <xsl:value-of select="$url"/></xsl:message>
                 <xsl:value-of select="$url"/>
             </xsl:attribute>
             <xsl:apply-templates/>
@@ -2806,9 +2807,18 @@
 
         <xsl:variable name="mimetype" select="@mimetype"/>
 
-        <ref target="{$href}" mimeType="{$mimetype}">
-            <xsl:value-of select="$text"/>
-        </ref>
+        <xsl:choose>
+            <xsl:when test="p/ext-link">
+                <p>
+                    <xsl:apply-templates select="p/ext-link"/>
+                </p>
+            </xsl:when>
+            <xsl:otherwise>
+                <ref target="{$href}" mimeType="{$mimetype}">
+                    <xsl:value-of select="$text"/>
+                </ref>
+            </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates select="caption"/>
     </xsl:template>
 
