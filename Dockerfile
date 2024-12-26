@@ -11,11 +11,12 @@ ENTRYPOINT ["/tini", "-s", "--"]
 
 WORKDIR /opt/Pub2TEI
 COPY . .
+COPY resources/config/config.yml ./resources/config/config.yaml
 RUN ./gradlew clean install --info --stacktrace
 
-ENV PUB2_TEI_OPTS "--add-opens java.base/java.lang=ALL-UNNAMED -Djava.library.path=$LD_LIBRARY_PATH:../grobid/grobid-home/lib/lin-64:../grobid/grobid-home/lib/lin-64/jep"
+ENV PUB2_TEI_OPTS "--add-opens java.base/java.lang=ALL-UNNAMED -Djava.library.path=$LD_LIBRARY_PATH:grobid-home/lib/lin-64:grobid-home/lib/lin-64/jep"
 
-CMD ["./script/pub2tei-service.sh", "server", "resources/config/config.yml"]
+CMD ["./script/pub2tei-service.sh", "server", "/opt/Pub2TEI/resources/config/config.yaml"]
 
 ARG PUB2TEI_VERSION
 
