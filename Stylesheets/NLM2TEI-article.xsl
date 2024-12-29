@@ -1202,11 +1202,12 @@
                     </group>
                 </xsl:if>
                 
-                <xsl:if test="back | bm | front/article-meta/product | front/article-meta/custom-meta-group/custom-meta[@id='data-availability']">
+                <xsl:if test="back | bm | front/article-meta/product | front/article-meta/custom-meta-group/custom-meta[@id='data-availability'] | front/article-meta/supplementary-material">
                     <back>
                         <!-- SG - source des book-reviews, données qualifiés de production chez Cambridge -->
                         <xsl:apply-templates select="front/article-meta/product"/>
                         <xsl:apply-templates select="back/* | bm/ack | bm/bibl"/>
+                        <xsl:apply-templates select="front/article-meta/supplementary-material"/>
 <!--                        <xsl:apply-templates select="sec[@sec-type='supplementary-material'] | notes[@notes-type='supplementary-material']"/>-->
                         <xsl:apply-templates select="front/article-meta/custom-meta-group/custom-meta[@id='data-availability']"/>
                     </back>
@@ -2750,7 +2751,7 @@
                     </xsl:otherwise>
                 </xsl:choose>
                 </xsl:variable>
-                <xsl:message>ext-link type: <xsl:value-of select="@ext-link-type"/>, URL: <xsl:value-of select="$url"/></xsl:message>
+<!--                <xsl:message>ext-link type: <xsl:value-of select="@ext-link-type"/>, URL: <xsl:value-of select="$url"/></xsl:message>-->
                 <xsl:value-of select="$url"/>
             </xsl:attribute>
             <xsl:apply-templates/>
@@ -2764,12 +2765,14 @@
     </xsl:template>
 
     <xsl:template match="supplementary-material/p | supplementary-material/label">
+        <xsl:message>Processing supplementary-material/p or .../label</xsl:message>
         <p>
             <xsl:value-of select="p"/>
         </p>
     </xsl:template>
 
     <xsl:template match="supplementary-material/caption">
+        <xsl:message>Processing supplementary-material/caption</xsl:message>
         <xsl:if test="title">
             <p>
                 <xsl:value-of select="title"/>
@@ -2782,7 +2785,29 @@
         </xsl:if>
     </xsl:template>
 
+    <xsl:template match="supplementary-material[parent::article-meta]">
+        <xsl:message>Processing supplementary-material under article-meta</xsl:message>
+        <div type="supplementary-material">
+            <head>Supplementary Material</head>
+            <xsl:if test="@xlink:href">
+                <ref>
+                    <xsl:attribute name="target"><xsl:value-of select="@xlink:href"/></xsl:attribute>
+                    <xsl:if test="@mimetype">
+                        <xsl:attribute name="mimeType"><xsl:value-of select="@mimetype"/></xsl:attribute>
+                    </xsl:if>
+                    <xsl:if test="@xlink:href">
+                        <xsl:attribute name="mimeSubType"><xsl:value-of select="@mime-subtype"/></xsl:attribute>
+                    </xsl:if>
+                </ref>
+                <xsl:if test ="caption">
+                    <xsl:apply-templates select="caption"/>
+                </xsl:if>
+            </xsl:if>
+        </div>
+    </xsl:template>
+
     <xsl:template match="supplementary-material">
+        <xsl:message>Processing supplementary-material</xsl:message>
         <xsl:variable name="href">
             <xsl:choose>
                 <xsl:when test="@xlink:href">
@@ -2838,7 +2863,7 @@
       kermit2:master?
      -->
         <xsl:template priority="2" match="sec[@sec-type='supplementary-material'] | notes[@notes-type='supplementary-material']">
-            <!--            <xsl:message>supplementary-material ran</xsl:message>-->
+            <xsl:message>Processing sec-type/note-type supplementary-material</xsl:message>-->
             <div type="supplementary-material">
                 <xsl:apply-templates/>
             </div>
@@ -3110,10 +3135,11 @@
     <xsl:template match="front/article-meta/product">
         <div type="review-of">
             <bibl>
-        <xsl:apply-templates/>
+                <xsl:apply-templates/>
             </bibl>
         </div>
     </xsl:template>
+
     <!-- SG - supplementary information about correction -->
     <xsl:template match="chghst">
         <xsl:apply-templates/>
