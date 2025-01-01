@@ -947,13 +947,51 @@
             </xsl:otherwise>
         </xsl:choose>
     </xsl:variable>
-   
+
+    <xsl:template name="createFundingInfo">
+        <xsl:param name="award_ref_id"/>
+<!--        <xsl:message>createFundingInfo(<xsl:value-of select="$award_ref_id"/>)</xsl:message>-->
+        <!-- Why do I have to suppress the namespace here? -->
+        <org type="funding">
+            <xsl:attribute name="xml:id">
+                <xsl:value-of select="$award_ref_id"/>
+            </xsl:attribute>
+            <idno type="grant-number"><xsl:value-of select="normalize-space(award-id/text())"/></idno>
+            <!-- Other things like programs, etc are better extracted via Grobid -->
+        </org>
+    </xsl:template>
+
+    <xsl:template name="createFunder">
+        <xsl:param name="award_ref_id"/>
+<!--        <xsl:message>createFunder(<xsl:value-of select="$award_ref_id"/>)</xsl:message>-->
+        <xsl:variable name="current_funder_name">
+            <xsl:value-of select="normalize-space(funding-source/text())"/>
+        </xsl:variable>
+        <funder>
+            <xsl:if test="award-id">
+                <xsl:attribute name="ref" select="$award_ref_id"/>
+            </xsl:if>
+            <orgName type="full"><xsl:value-of select="$current_funder_name"/></orgName>
+        </funder>
+    </xsl:template>
+
     <!-- TEI document structure, creation of main header components, front (summary), body, and back -->
     <xsl:template match="article[front] | article[pubfm] | article[suppfm] | headerx">
         <!--xsl:comment>
             <xsl:text>Version 0.1 generated on </xsl:text>
             <xsl:value-of select="$datecreation"/>
         </xsl:comment-->
+        <xsl:variable name="award_ref_ids_string">
+            <xsl:for-each select="front/article-meta/funding-group/award-group">
+                <xsl:choose>
+                    <xsl:when test="position() = 1">_<xsl:value-of select="generate-id()"/></xsl:when>
+                    <xsl:otherwise>,_<xsl:value-of select="generate-id()"/></xsl:otherwise>
+                </xsl:choose>
+            </xsl:for-each>
+        </xsl:variable>
+<!--        <xsl:message>award_ref_ids_string: <xsl:value-of select="$award_ref_ids_string"/></xsl:message>-->
+        <xsl:variable name="award_ref_ids" select="tokenize($award_ref_ids_string, ',')"/>
+<!--        <xsl:message>award_ref_ids: <xsl:value-of select="count($award_ref_ids)"/></xsl:message>-->
         <TEI>
             <xsl:attribute name="xsi:noNamespaceSchemaLocation">
                 <xsl:text>https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd</xsl:text>
@@ -973,7 +1011,14 @@
                         <title level="a" type="main">
                             <xsl:value-of select="$repriseTitreVide"/>
                         </title>
-                        <xsl:apply-templates select="front/article-meta/funding-group/award-group" mode="funder"/>
+                        <xsl:for-each select="front/article-meta/funding-group/award-group">
+                            <!-- No idea why this ridiculousness with all the variables is necessary -->
+                            <xsl:variable name="my_position" select="position()"/>
+                            <xsl:variable name="award_ref_id" select="$award_ref_ids[$my_position]"/>
+                            <xsl:call-template name="createFunder">
+                                <xsl:with-param name="award_ref_id" select="$award_ref_id"/>
+                            </xsl:call-template>
+                        </xsl:for-each>
                     </titleStmt>
                     <!-- PL: pour les suppinfo, sous fileDesc/editionStmt/edition/ref, solution de HAL --> 
                     <!-- SG - reprise correction lors de l'édition -->
@@ -1203,9 +1248,8 @@
                     </group>
                 </xsl:if>
                 
-                <xsl:if test="back | bm | front/article-meta/product | front/article-meta/custom-meta-group/custom-meta[@id='data-availability'] | front/article-meta/supplementary-material | */funding-group">
+                <xsl:if test="back | bm | front/article-meta/product | front/article-meta/custom-meta-group/custom-meta[@id='data-availability'] | front/article-meta/supplementary-material | //funding-group/award-group">
                     <back>
-                        <xsl:message>Processing back</xsl:message>
                         <!-- SG - source des book-reviews, données qualifiés de production chez Cambridge -->
                         <xsl:apply-templates select="front/article-meta/product"/>
                         <xsl:apply-templates select="back/* | bm/ack | bm/bibl"/>
@@ -1216,38 +1260,48 @@
                         <!-- <xsl:apply-templates select="front/article-meta/funding-group"/> -->
                         <!-- So we do this -->
                         <xsl:apply-templates select="//funding-group"/>
+                        <xsl:if test="//funding-group/award-group/award-id">
+                            <listOrg type="funding">
+                                <xsl:for-each select="//funding-group/award-group">
+                                    <!-- No idea why this ridiculousness with all the variables is necessary -->
+                                    <xsl:variable name="my_position" select="position()"/>
+                                    <xsl:variable name="award_ref_id" select="$award_ref_ids[$my_position]"/>
+                                    <xsl:if test="award-id">
+                                        <xsl:call-template name="createFundingInfo">
+                                            <xsl:with-param name="award_ref_id" select="$award_ref_id"/>
+                                        </xsl:call-template>
+                                    </xsl:if>
+                                </xsl:for-each>
+                            </listOrg>
+                        </xsl:if>
                     </back>
                 </xsl:if>
             </text>
         </TEI>
     </xsl:template>
 
-    <xsl:template match="award-group" mode="listOrg">
-        <org type="funding" xml:id="">
-            <xsl:if test="award-id">
-                <idno type="grant-number"><xsl:value-of select="normalize-space(award-id/text())"/></idno>
-            </xsl:if>
-            <xsl:value-of select="normalize-space(funding-source/text())"/>
-        </org>
-    </xsl:template>
+<!--    <xsl:template match="award-group" mode="listOrg">-->
+<!--        <org type="funding" xml:id="">-->
+<!--            <xsl:if test="award-id">-->
+<!--                <idno type="grant-number"><xsl:value-of select="normalize-space(award-id/text())"/></idno>-->
+<!--            </xsl:if>-->
+<!--            <xsl:value-of select="normalize-space(funding-source/text())"/>-->
+<!--        </org>-->
+<!--    </xsl:template>-->
 
     <xsl:template match="funding-group">
-        <xsl:message>Processing funding-group</xsl:message>
-        <listOrg type="funding">
-            <xsl:apply-templates select="award-group" mode="listOrg"/>
-        </listOrg>
+<!--        <xsl:message>Processing funding-group's funding-statement</xsl:message>-->
         <xsl:if test="funding-statement">
-            <div type="funding-statement">
+            <div type="funding">
                 <div>
                     <head>funding-statement</head>
                     <p>
-                        <xsl:apply-templates select="funding-statement"/>
+                        <xsl:value-of select="normalize-space(funding-statement/text())" />
                     </p>
                 </div>
             </div>
         </xsl:if>
     </xsl:template>
-
 
     <!-- TEI document structure, creation of main header components, front (summary), body, and back -->
     <xsl:template match="sub-article">
@@ -1402,18 +1456,14 @@
         <!-- no-op -->
     </xsl:template>
 
-    <xsl:template match="funding-statement">
-        <funding-statement>
-            <xsl:value-of select="normalize-space(text())" />
-        </funding-statement>
-    </xsl:template>
-
     <!-- award-group is turned into a funder node under the titleStmt -->
-    <xsl:template match="award-group" mode="funder">
-        <funder ref="">
-            <orgName type="full"><xsl:value-of select="normalize-space(funding-source/text())"/></orgName>
-        </funder>
-    </xsl:template>
+<!--    <xsl:template match="award-group" mode="funder">-->
+<!--        <xsl:message>Current: <xsl:value-of select="current()"/></xsl:message>-->
+<!--        <funder>-->
+<!--            <xsl:attribute name="ref">_<xsl:value-of select="substring(generate-id(),1,7)"/></xsl:attribute>-->
+<!--            <orgName type="full"><xsl:value-of select="normalize-space(funding-source/text())"/></orgName>-->
+<!--        </funder>-->
+<!--    </xsl:template>-->
 
     <!-- We do not care about components from <article-meta> which are
     not explicitly addressed by means of an XPath in another template-->

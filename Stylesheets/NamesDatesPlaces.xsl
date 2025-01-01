@@ -195,7 +195,7 @@
             <xsl:value-of select="$countryCodes/descendant::tei:row[tei:cell/text() = $country]/tei:cell[@role = 'a2code']"/>
         </xsl:variable>
         <xsl:if test="not(normalize-space($resultCode))">
-            <xsl:message>Country: <xsl:value-of select="$country"/> - Code not found</xsl:message>
+<!--            <xsl:message>Country: <xsl:value-of select="$country"/> - Code not found</xsl:message>-->
         </xsl:if>
         <xsl:value-of select="$resultCode"/>
     </xsl:template>
@@ -206,7 +206,7 @@
             <xsl:value-of select="$countryCodes/descendant::tei:row[tei:cell/text() = $country]/tei:cell[@role = 'name' and @xml:lang = 'en']"/>
         </xsl:variable>
        <xsl:if test="not(normalize-space($resultCode))">
-            <xsl:message>Country: <xsl:value-of select="$country"/> - Code not found</xsl:message>
+<!--            <xsl:message>Country: <xsl:value-of select="$country"/> - Code not found</xsl:message>-->
         </xsl:if>
         <xsl:value-of select="$resultCode"/>
     </xsl:template>

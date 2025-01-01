@@ -206,7 +206,7 @@ public class XSLTProcessor {
         // TODO: Put on a "Dev" environment variable flag.
         //  unless there is a more elegant way to avoid full restart on
         //  template changes.
-        reload();
+        // reload();
 
         //Serializer out = new Serializer();
         Serializer out = proc.newSerializer();
