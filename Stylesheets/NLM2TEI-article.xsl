@@ -973,6 +973,7 @@
                         <title level="a" type="main">
                             <xsl:value-of select="$repriseTitreVide"/>
                         </title>
+                        <xsl:apply-templates select="front/article-meta/funding-group/award-group" mode="funder"/>
                     </titleStmt>
                     <!-- PL: pour les suppinfo, sous fileDesc/editionStmt/edition/ref, solution de HAL --> 
                     <!-- SG - reprise correction lors de l'édition -->
@@ -1202,20 +1203,52 @@
                     </group>
                 </xsl:if>
                 
-                <xsl:if test="back | bm | front/article-meta/product | front/article-meta/custom-meta-group/custom-meta[@id='data-availability'] | front/article-meta/supplementary-material">
+                <xsl:if test="back | bm | front/article-meta/product | front/article-meta/custom-meta-group/custom-meta[@id='data-availability'] | front/article-meta/supplementary-material | */funding-group">
                     <back>
+                        <xsl:message>Processing back</xsl:message>
                         <!-- SG - source des book-reviews, données qualifiés de production chez Cambridge -->
                         <xsl:apply-templates select="front/article-meta/product"/>
                         <xsl:apply-templates select="back/* | bm/ack | bm/bibl"/>
                         <xsl:apply-templates select="front/article-meta/supplementary-material"/>
 <!--                        <xsl:apply-templates select="sec[@sec-type='supplementary-material'] | notes[@notes-type='supplementary-material']"/>-->
                         <xsl:apply-templates select="front/article-meta/custom-meta-group/custom-meta[@id='data-availability']"/>
+                        <!-- For some reason this doesn't work -->
+                        <!-- <xsl:apply-templates select="front/article-meta/funding-group"/> -->
+                        <!-- So we do this -->
+                        <xsl:apply-templates select="//funding-group"/>
                     </back>
                 </xsl:if>
             </text>
         </TEI>
     </xsl:template>
-    
+
+    <xsl:template match="award-group" mode="listOrg">
+        <org type="funding" xml:id="">
+            <xsl:if test="award-id">
+                <idno type="grant-number"><xsl:value-of select="normalize-space(award-id/text())"/></idno>
+            </xsl:if>
+            <xsl:value-of select="normalize-space(funding-source/text())"/>
+        </org>
+    </xsl:template>
+
+    <xsl:template match="funding-group">
+        <xsl:message>Processing funding-group</xsl:message>
+        <listOrg type="funding">
+            <xsl:apply-templates select="award-group" mode="listOrg"/>
+        </listOrg>
+        <xsl:if test="funding-statement">
+            <div type="funding-statement">
+                <div>
+                    <head>funding-statement</head>
+                    <p>
+                        <xsl:apply-templates select="funding-statement"/>
+                    </p>
+                </div>
+            </div>
+        </xsl:if>
+    </xsl:template>
+
+
     <!-- TEI document structure, creation of main header components, front (summary), body, and back -->
     <xsl:template match="sub-article">
         <text type="sub-article">
@@ -1363,9 +1396,23 @@
         </text>
     </xsl:template>
 
+
     <!-- There is interesting metadata in funding-source under article/back/ack/p for PMC-XML -->
     <xsl:template match="subj-group|alternatives|meta-name|meta-value|x[@xml:space='preserve']">
         <!-- no-op -->
+    </xsl:template>
+
+    <xsl:template match="funding-statement">
+        <funding-statement>
+            <xsl:value-of select="normalize-space(text())" />
+        </funding-statement>
+    </xsl:template>
+
+    <!-- award-group is turned into a funder node under the titleStmt -->
+    <xsl:template match="award-group" mode="funder">
+        <funder ref="">
+            <orgName type="full"><xsl:value-of select="normalize-space(funding-source/text())"/></orgName>
+        </funder>
     </xsl:template>
 
     <!-- We do not care about components from <article-meta> which are
@@ -2286,14 +2333,21 @@
     <!--
     PMC XML inlines the institution name within funding-source tags, where the name is a subtag.
     The following template pulls the name out and the name if it's there.
+
+    It also extracts structured funding data (for more than just PMC XML) into a new node which we can use to pass
+    that data to customers (e.g. funder names).
      -->
     <xsl:template match="funding-source">
         <xsl:choose>
             <xsl:when test="institution-wrap/institution-id[@institution-id-type='doi']">
                 <xsl:value-of select="institution-wrap/institution"/> [DOI: <xsl:value-of select="institution-wrap/institution-id[@institution-id-type='doi']"/>]
             </xsl:when>
-            <xsl:otherwise>
+            <xsl:when test="institution-wrap/institution">
                 <xsl:value-of select="institution-wrap/institution"/>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:message>Raw funding source</xsl:message>
+                <xsl:value-of select="."/>
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
@@ -2765,14 +2819,14 @@
     </xsl:template>
 
     <xsl:template match="supplementary-material/p | supplementary-material/label">
-        <xsl:message>Processing supplementary-material/p or .../label</xsl:message>
+<!--        <xsl:message>Processing supplementary-material/p or .../label</xsl:message>-->
         <p>
             <xsl:value-of select="p"/>
         </p>
     </xsl:template>
 
     <xsl:template match="supplementary-material/caption">
-        <xsl:message>Processing supplementary-material/caption</xsl:message>
+<!--        <xsl:message>Processing supplementary-material/caption</xsl:message>-->
         <xsl:if test="title">
             <p>
                 <xsl:value-of select="title"/>
@@ -2786,7 +2840,7 @@
     </xsl:template>
 
     <xsl:template match="supplementary-material[parent::article-meta]">
-        <xsl:message>Processing supplementary-material under article-meta</xsl:message>
+<!--        <xsl:message>Processing supplementary-material under article-meta</xsl:message>-->
         <div type="supplementary-material">
             <head>Supplementary Material</head>
             <xsl:if test="@xlink:href">
@@ -2807,7 +2861,7 @@
     </xsl:template>
 
     <xsl:template match="supplementary-material">
-        <xsl:message>Processing supplementary-material</xsl:message>
+<!--        <xsl:message>Processing supplementary-material</xsl:message>-->
         <xsl:variable name="href">
             <xsl:choose>
                 <xsl:when test="@xlink:href">
@@ -2863,7 +2917,7 @@
       kermit2:master?
      -->
         <xsl:template priority="2" match="sec[@sec-type='supplementary-material'] | notes[@notes-type='supplementary-material']">
-            <xsl:message>Processing sec-type/note-type supplementary-material</xsl:message>-->
+<!--            <xsl:message>Processing sec-type/note-type supplementary-material</xsl:message>&ndash;&gt;-->
             <div type="supplementary-material">
                 <xsl:apply-templates/>
             </div>
