@@ -967,7 +967,7 @@
         <xsl:param name="award_ref_id"/>
 <!--        <xsl:message>createFunder(<xsl:value-of select="$award_ref_id"/>)</xsl:message>-->
         <xsl:variable name="current_funder_name">
-            <xsl:value-of select="normalize-space(funding-source/text())"/>
+            <xsl:value-of select="funding-source/text()"/>
         </xsl:variable>
         <funder>
             <xsl:if test="award-id">
@@ -1075,7 +1075,7 @@
                                 <p>Open Access</p>
                             </availability>
                         </xsl:if>
-                        <xsl:if test="normalize-space(front/article-meta/permissions/copyright-statement) or normalize-space(//front//permissions/license) or normalize-space(front/article-meta/permissions/copyright-holder) or pubfm/cpg/cpn">
+                        <xsl:if test="front/article-meta/permissions/copyright-statement or //front//permissions/license or front/article-meta/permissions/copyright-holder or pubfm/cpg/cpn">
                             <availability>
                                 <xsl:if test="//permissions/license[@license-type='open-access']">
                                     <xsl:attribute name="status">restricted</xsl:attribute>
