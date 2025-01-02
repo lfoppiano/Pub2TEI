@@ -1298,7 +1298,7 @@
                 <div>
                     <head>funding-statement</head>
                     <p>
-                        <xsl:value-of select="normalize-space(funding-statement/text())" />
+                        <xsl:value-of select="funding-statement/text()" />
                     </p>
                 </div>
             </div>
