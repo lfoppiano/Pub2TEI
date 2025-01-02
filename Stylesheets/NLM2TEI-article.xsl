@@ -956,8 +956,10 @@
             <xsl:attribute name="xml:id">
                 <xsl:value-of select="$award_ref_id"/>
             </xsl:attribute>
-            <idno type="grant-number"><xsl:value-of select="normalize-space(award-id/text())"/></idno>
-            <!-- Other things like programs, etc are better extracted via Grobid -->
+            <!-- Cannot run normalize-space() on strings containing ", ". We should strip the value in the TEI. -->
+<!--            <idno type="grant-number"><xsl:value-of select="normalize-space(award-id/text())"/></idno> -->
+            <idno type="grant-number"><xsl:value-of select="award-id/text()"/></idno>
+            <!-- Other elements like programs, etc. are better extracted via Grobid. -->
         </org>
     </xsl:template>
 
