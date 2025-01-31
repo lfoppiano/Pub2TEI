@@ -229,12 +229,12 @@ public class XMLUtilities {
 
         for (int i = 0; i < nbChildren; i++) {
             final Node n = newChildren.get(i);
-            if ( (n.getNodeType() == Node.ELEMENT_NODE) && 
-                 (textualElements.contains(n.getNodeName())) ) {
+            if (n.getNodeType() == Node.ELEMENT_NODE && textualElements.contains(n.getNodeName())) {
 
                 // text content
                 StringBuilder textBuffer = new StringBuilder();
                 NodeList childNodes = n.getChildNodes();
+                List<OffsetPosition> forbiddenPositions = new ArrayList<>();
                 for(int y=0; y<childNodes.getLength(); y++) {
                     Node item = childNodes.item(y);
                     String serializedString = serialize(doc, item);
@@ -245,10 +245,20 @@ public class XMLUtilities {
                             textBuffer.append(" ");
                         }
                     }
+
+                    if (item.getNodeType() == Node.ELEMENT_NODE) {
+                        //Search if there is a reference an if there is, compile an offset position
+                        if (serializedString.contains("<ref") && serializedString.contains("</ref>")) {
+                            int spacesLength = textBuffer.toString().length() - textBuffer.toString().replaceAll("\\s+$", "").length();
+                            forbiddenPositions.add(new OffsetPosition(textBuffer.length() - spacesLength - 1,
+                                textBuffer.length() - spacesLength + serializedString.length()));
+                        }
+                    }
+
                     textBuffer.append(serializedString);
                 }
                 String text = textBuffer.toString();
-                List<OffsetPosition> theSentenceBoundaries = SentenceUtilities.getInstance().runSentenceDetection(text);
+                List<OffsetPosition> theSentenceBoundaries = SentenceUtilities.getInstance().runSentenceDetection(text, forbiddenPositions);
 
                 // we're making a first pass to ensure that there is no element broken by the segmentation
                 List<String> sentences = new ArrayList<>();
