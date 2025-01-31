@@ -250,7 +250,8 @@ public class XMLUtilities {
                         //Search if there is a reference an if there is, compile an offset position
                         if (serializedString.contains("<ref") && serializedString.contains("</ref>")) {
                             int spacesLength = textBuffer.toString().length() - textBuffer.toString().replaceAll("\\s+$", "").length();
-                            forbiddenPositions.add(new OffsetPosition(textBuffer.length() - spacesLength, textBuffer.length() + serializedString.length()));
+                            forbiddenPositions.add(new OffsetPosition(textBuffer.length() - spacesLength - 1,
+                                textBuffer.length() - spacesLength + serializedString.length()));
                         }
                     }
 
