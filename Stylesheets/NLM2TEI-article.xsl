@@ -2863,7 +2863,6 @@
         </ref>
         <!-- récuperation des doi -->
         <xsl:if test="contains(.,'doi:')">
-            <xsl:message>3</xsl:message>
             <ref type="doi">
                 <xsl:value-of select="substring-after(.,'doi:')"/>
             </ref>
@@ -2940,7 +2939,6 @@
 
         <xsl:choose>
             <xsl:when test="p/ext-link">
-                <xsl:message>2</xsl:message>
                 <p>
                     <xsl:apply-templates select="p/ext-link"/>
                 </p>
