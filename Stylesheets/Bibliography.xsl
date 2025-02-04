@@ -1461,6 +1461,9 @@
                         <xsl:apply-templates select="person-group"/>
                         <xsl:apply-templates select="elocation-id"/>
                         <xsl:apply-templates select="pub-id"/>
+                        <!-- This is where PLoS put URLs for references -->
+                        <xsl:apply-templates select="comment/ext-link"/>
+                        <xsl:apply-templates select="ext-link"/>
                     </analytic>
                     <monogr>
                         <xsl:apply-templates select="source"/>

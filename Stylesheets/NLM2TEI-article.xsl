@@ -1200,6 +1200,7 @@
                         <!-- SG - source des book-reviews, données qualifiés de production chez Cambridge -->
                         <xsl:apply-templates select="front/article-meta/product"/>
                         <xsl:apply-templates select="back/* | bm/ack | bm/bibl"/>
+                        <xsl:apply-templates select="front/article-meta/supplementary-material"/>
 <!--                        <xsl:apply-templates select="sec[@sec-type='supplementary-material'] | notes[@notes-type='supplementary-material']"/>-->
                         <xsl:apply-templates select="front/article-meta/custom-meta-group/custom-meta[@id='data-availability']"/>
                     </back>
@@ -2743,6 +2744,27 @@
         </xsl:if>
     </xsl:template>
 
+    <xsl:template match="supplementary-material[parent::article-meta]">
+<!--        <xsl:message>Processing supplementary-material under article-meta</xsl:message>-->
+        <div type="supplementary-material">
+            <head>Supplementary Material</head>
+            <xsl:if test="@xlink:href">
+                <ref>
+                    <xsl:attribute name="target"><xsl:value-of select="@xlink:href"/></xsl:attribute>
+                    <xsl:if test="@mimetype">
+                        <xsl:attribute name="mimeType"><xsl:value-of select="@mimetype"/></xsl:attribute>
+                    </xsl:if>
+                    <xsl:if test="@xlink:href">
+                        <xsl:attribute name="mimeSubType"><xsl:value-of select="@mime-subtype"/></xsl:attribute>
+                    </xsl:if>
+                </ref>
+                <xsl:if test ="caption">
+                    <xsl:apply-templates select="caption"/>
+                </xsl:if>
+            </xsl:if>
+        </div>
+    </xsl:template>
+
     <xsl:template match="supplementary-material">
         <xsl:variable name="href">
             <xsl:choose>
@@ -2768,9 +2790,18 @@
 
         <xsl:variable name="mimetype" select="@mimetype"/>
 
-        <ref target="{$href}" mimeType="{$mimetype}">
-            <xsl:value-of select="$text"/>
-        </ref>
+        <xsl:choose>
+            <xsl:when test="p/ext-link">
+                <p>
+                    <xsl:apply-templates select="p/ext-link"/>
+                </p>
+            </xsl:when>
+            <xsl:otherwise>
+                <ref target="{$href}" mimeType="{$mimetype}">
+                    <xsl:value-of select="$text"/>
+                </ref>
+            </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates select="caption"/>
     </xsl:template>
 
@@ -2783,11 +2814,18 @@
 <!--        </xsl:apply-templates>-->
 <!--    </xsl:template>-->
 
-    <xsl:template match="sec[@sec-type='supplementary-material'] | notes[@notes-type='supplementary-material']">
-        <div type="supplementary-material">
-            <xsl:apply-templates/>
-        </div>
-    </xsl:template>
+    <!--
+     TODO: Discussion. Why is there such a broad XSLT match as: sec[not(parent::boxed-text)] above?
+      It is an ambiguous rule with the one below. PLoS-XML (at least) puts this below body.
+      So I introduced a restriction on sec[not(parent::boxed-text)] above. Perhaps this is a candidate for
+      kermit2:master?
+     -->
+        <xsl:template priority="2" match="sec[@sec-type='supplementary-material'] | notes[@notes-type='supplementary-material']">
+<!--            <xsl:message>Processing sec-type/note-type supplementary-material</xsl:message>&ndash;&gt;-->
+            <div type="supplementary-material">
+                <xsl:apply-templates/>
+            </div>
+        </xsl:template>
 
 <!--    <xsl:template match="back">-->
 <!--        <xsl:param name="supplementary-content"/>-->
@@ -3055,7 +3093,7 @@
     <xsl:template match="front/article-meta/product">
         <div type="review-of">
             <bibl>
-        <xsl:apply-templates/>
+                <xsl:apply-templates/>
             </bibl>
         </div>
     </xsl:template>

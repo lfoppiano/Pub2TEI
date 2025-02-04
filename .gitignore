@@ -33,3 +33,5 @@ build.xml
 */maven-build.xml
 maven-build.xml
 release.properties
+grobid-home
+clients/
