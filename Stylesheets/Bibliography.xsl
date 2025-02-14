@@ -427,7 +427,8 @@
         <xsl:choose>
             <xsl:when test="note">
                 <bibl type="note">
-                    <xsl:apply-templates/>
+                    <xsl:attribute name="xml:id" select="@id"/>
+                    <xsl:value-of select="."/>
                 </bibl>
             </xsl:when>
             <xsl:otherwise>

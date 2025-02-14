@@ -1454,7 +1454,7 @@
 
 
     <!-- There is interesting metadata in funding-source under article/back/ack/p for PMC-XML -->
-    <xsl:template match="subj-group|alternatives|meta-name|meta-value|x[@xml:space='preserve']">
+    <xsl:template match="subj-group|alternatives|meta-name|meta-value|x[@xml:space='preserve']|related-article|col">
         <!-- no-op -->
     </xsl:template>
 
