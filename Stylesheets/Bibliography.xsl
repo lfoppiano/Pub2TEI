@@ -19,6 +19,7 @@
     <!-- ref-list: NLM article, ScholarOne -->
 
     <xsl:template match="ref-list | biblist | ce:bibliography | bibl | wiley:bibliography">
+        <xsl:message>references</xsl:message>
         <div type="references">
             <xsl:apply-templates select="title | ce:section-title"/>
             <xsl:apply-templates select="ref-list"/>
@@ -1404,6 +1405,7 @@
     <xsl:template match="element-citation|mixed-citation">
         <xsl:choose>
             <xsl:when test="contains(../@id,'jn')">
+                <xsl:message>element-citation 1</xsl:message>
                 <bibl>
                     <xsl:attribute name="type">
                         <xsl:text>footnote</xsl:text>
@@ -1417,12 +1419,20 @@
                         <xsl:text>in-line</xsl:text>
                     </xsl:attribute>
                     <xsl:choose>
+                        <xsl:when test="ancestor::ref[@id]">
+                            <xsl:message>element-citation case 2a. id: <xsl:value-of select="ancestor::ref/@id"/></xsl:message>
+                            <xsl:attribute name="xml:id">
+                                <xsl:value-of select="ancestor::ref/@id"/>
+                            </xsl:attribute>
+                        </xsl:when>
                         <xsl:when test="@id">
+                            <xsl:message>element-citation case 2b. id: <xsl:value-of select="@id"/></xsl:message>
                             <xsl:attribute name="xml:id">
                                 <xsl:value-of select="@id"/>
                             </xsl:attribute>
                         </xsl:when>
                         <xsl:otherwise>
+                            <xsl:message>element-citation case 2c. id: <xsl:value-of select="../@id"/></xsl:message>
                             <xsl:attribute name="xml:id">
                                 <xsl:value-of select="../@id"/>
                             </xsl:attribute>
@@ -1439,17 +1449,20 @@
                         </xsl:attribute>
                     </xsl:if>
                     <xsl:choose>
-                        <xsl:when test="../../ref[@id]">
+                        <xsl:when test="ancestor::ref[@id]">
+                            <xsl:message>element-citation case 3a. id: <xsl:value-of select="ancestor::ref/@id"/></xsl:message>
                             <xsl:attribute name="xml:id">
-                                <xsl:value-of select="../@id"/>
+                                <xsl:value-of select="ancestor::ref/@id"/>
                             </xsl:attribute>
                         </xsl:when>
                         <xsl:when test="@id">
+                            <xsl:message>element-citation case 3b. id: <xsl:value-of select="@id"/></xsl:message>
                             <xsl:attribute name="xml:id">
                                 <xsl:value-of select="@id"/>
                             </xsl:attribute>
                         </xsl:when>
                         <xsl:otherwise>
+                            <xsl:message>element-citation case 3c. id: <xsl:value-of select="../@id"/></xsl:message>
                             <xsl:attribute name="xml:id">
                                 <xsl:value-of select="../@id"/>
                             </xsl:attribute>

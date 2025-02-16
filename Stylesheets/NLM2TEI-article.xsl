@@ -1454,7 +1454,8 @@
 
 
     <!-- There is interesting metadata in funding-source under article/back/ack/p for PMC-XML -->
-    <xsl:template match="subj-group|alternatives|meta-name|meta-value|x[@xml:space='preserve']|related-article|col">
+    <!-- TODO: Remove "chapter-title", "series" and "edition" and implement them in Bibliography.xsl -->
+    <xsl:template match="subj-group|alternatives|meta-name|meta-value|x[@xml:space='preserve']|related-article|col|alt-text|chapter-title|series|edition">
         <!-- no-op -->
     </xsl:template>
 
@@ -2398,7 +2399,7 @@
                 <xsl:value-of select="institution-wrap/institution"/>
             </xsl:when>
             <xsl:otherwise>
-                <xsl:message>Raw funding source</xsl:message>
+<!--                <xsl:message>Raw funding source</xsl:message>-->
                 <xsl:value-of select="."/>
             </xsl:otherwise>
         </xsl:choose>
