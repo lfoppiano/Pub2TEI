@@ -427,7 +427,8 @@
         <xsl:choose>
             <xsl:when test="note">
                 <bibl type="note">
-                    <xsl:apply-templates/>
+                    <xsl:attribute name="xml:id" select="@id"/>
+                    <xsl:value-of select="."/>
                 </bibl>
             </xsl:when>
             <xsl:otherwise>
@@ -1416,6 +1417,11 @@
                         <xsl:text>in-line</xsl:text>
                     </xsl:attribute>
                     <xsl:choose>
+                        <xsl:when test="ancestor::ref[@id]">
+                            <xsl:attribute name="xml:id">
+                                <xsl:value-of select="ancestor::ref/@id"/>
+                            </xsl:attribute>
+                        </xsl:when>
                         <xsl:when test="@id">
                             <xsl:attribute name="xml:id">
                                 <xsl:value-of select="@id"/>
@@ -1438,9 +1444,9 @@
                         </xsl:attribute>
                     </xsl:if>
                     <xsl:choose>
-                        <xsl:when test="../../ref[@id]">
+                        <xsl:when test="ancestor::ref[@id]">
                             <xsl:attribute name="xml:id">
-                                <xsl:value-of select="../@id"/>
+                                <xsl:value-of select="ancestor::ref/@id"/>
                             </xsl:attribute>
                         </xsl:when>
                         <xsl:when test="@id">
@@ -1461,6 +1467,9 @@
                         <xsl:apply-templates select="person-group"/>
                         <xsl:apply-templates select="elocation-id"/>
                         <xsl:apply-templates select="pub-id"/>
+                        <!-- This is where PLoS put URLs for references -->
+                        <xsl:apply-templates select="comment/ext-link"/>
+                        <xsl:apply-templates select="ext-link"/>
                     </analytic>
                     <monogr>
                         <xsl:apply-templates select="source"/>
