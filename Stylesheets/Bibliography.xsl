@@ -1417,6 +1417,11 @@
                         <xsl:text>in-line</xsl:text>
                     </xsl:attribute>
                     <xsl:choose>
+                        <xsl:when test="ancestor::ref[@id]">
+                            <xsl:attribute name="xml:id">
+                                <xsl:value-of select="ancestor::ref/@id"/>
+                            </xsl:attribute>
+                        </xsl:when>
                         <xsl:when test="@id">
                             <xsl:attribute name="xml:id">
                                 <xsl:value-of select="@id"/>
@@ -1439,9 +1444,9 @@
                         </xsl:attribute>
                     </xsl:if>
                     <xsl:choose>
-                        <xsl:when test="../../ref[@id]">
+                        <xsl:when test="ancestor::ref[@id]">
                             <xsl:attribute name="xml:id">
-                                <xsl:value-of select="../@id"/>
+                                <xsl:value-of select="ancestor::ref/@id"/>
                             </xsl:attribute>
                         </xsl:when>
                         <xsl:when test="@id">
