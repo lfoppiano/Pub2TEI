@@ -1250,12 +1250,14 @@
                     </group>
                 </xsl:if>
                 
-                <xsl:if test="back | bm | front/article-meta/product | front/article-meta/custom-meta-group/custom-meta[@id='data-availability'] | front/article-meta/supplementary-material | //funding-group/award-group">
+                <xsl:if test="back | bm | front/article-meta/product | front/article-meta/custom-meta-group/custom-meta[@id='data-availability'] | front/article-meta/supplementary-material | //funding-group/award-group | //body/sec/supplementary-material | //sub-article/body/supplemantary-material">
                     <back>
                         <!-- SG - source des book-reviews, données qualifiés de production chez Cambridge -->
                         <xsl:apply-templates select="front/article-meta/product"/>
                         <xsl:apply-templates select="back/* | bm/ack | bm/bibl"/>
                         <xsl:apply-templates select="front/article-meta/supplementary-material"/>
+                        <xsl:apply-templates select="body/sec/supplementary-material"/>
+                        <xsl:apply-templates select="sub-article/body/supplementary-material"/>
 <!--                        <xsl:apply-templates select="sec[@sec-type='supplementary-material'] | notes[@notes-type='supplementary-material']"/>-->
                         <xsl:apply-templates select="front/article-meta/custom-meta-group/custom-meta[@id='data-availability']"/>
                         <!-- For some reason this doesn't work -->
@@ -2912,11 +2914,63 @@
         </div>
     </xsl:template>
 
+    <xsl:template match="body/sec/supplementary-material">
+<!--        <xsl:message>Processing body/sec supplementary-material</xsl:message>-->
+        <div type="supplementary-material">
+            <xsl:if test="@id">
+                <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
+            </xsl:if>
+            <p>
+                <s>
+                    <xsl:if test="@xlink:href">
+        <!--                <xsl:message>xlink:href</xsl:message>-->
+                        <ref>
+                            <xsl:attribute name="type"><xsl:value-of />url</xsl:attribute>
+                            <xsl:attribute name="target"><xsl:value-of select="@xlink:href"/></xsl:attribute>
+                            <xsl:if test="@mimetype">
+        <!--                        <xsl:message>mimetype</xsl:message>-->
+                                <xsl:attribute name="mimetype"><xsl:value-of select="@mimetype"/></xsl:attribute>
+                            </xsl:if>
+                        </ref>
+                    </xsl:if>
+                    <xsl:value-of select="."/>
+                </s>
+            </p>
+        </div>
+    </xsl:template>
+
+    <xsl:template match="sub-article/body/supplementary-material">
+        <div type="supplementary-material">
+<!--            <xsl:message>Processing sub-article/body supplementary-material</xsl:message>-->
+            <xsl:if test="@id">
+                <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
+            </xsl:if>
+            <p>
+                <s>
+                    <xsl:if test="@xlink:href">
+        <!--                <xsl:message>xlink:href</xsl:message>-->
+                        <ref>
+                            <xsl:attribute name="type"><xsl:value-of />url</xsl:attribute>
+                            <xsl:attribute name="target"><xsl:value-of select="@xlink:href"/></xsl:attribute>
+                            <xsl:if test="@mimetype">
+        <!--                        <xsl:message>mimetype</xsl:message>-->
+                                <xsl:attribute name="mimetype"><xsl:value-of select="@mimetype"/></xsl:attribute>
+                            </xsl:if>
+                        </ref>
+                    </xsl:if>
+                    <xsl:value-of select="."/>
+                </s>
+            </p>
+        </div>
+    </xsl:template>
+
+
     <xsl:template match="supplementary-material">
-<!--        <xsl:message>Processing supplementary-material</xsl:message>-->
+<!--        <xsl:message>Processing generic supplementary-material</xsl:message>-->
         <xsl:variable name="href">
             <xsl:choose>
                 <xsl:when test="@xlink:href">
+<!--                    <xsl:message>Value: <xsl:value-of select="@xlink:href"/></xsl:message>-->
                     <xsl:value-of select="@xlink:href"/>
                 </xsl:when>
                 <xsl:when test="media/@xlink:href">
