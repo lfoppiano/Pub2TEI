@@ -1195,11 +1195,14 @@
                     </group>
                 </xsl:if>
                 
-                <xsl:if test="back | bm | front/article-meta/product | front/article-meta/custom-meta-group/custom-meta[@id='data-availability']">
+                <xsl:if test="back | bm | front/article-meta/product | front/article-meta/custom-meta-group/custom-meta[@id='data-availability'] | front/article-meta/supplementary-material | //funding-group/award-group | //body/sec/supplementary-material | //sub-article/body/supplemantary-material">
                     <back>
                         <!-- SG - source des book-reviews, données qualifiés de production chez Cambridge -->
                         <xsl:apply-templates select="front/article-meta/product"/>
                         <xsl:apply-templates select="back/* | bm/ack | bm/bibl"/>
+                        <xsl:apply-templates select="front/article-meta/supplementary-material"/>
+                        <xsl:apply-templates select="body/sec/supplementary-material"/>
+                        <xsl:apply-templates select="sub-article/body/supplementary-material"/>
 <!--                        <xsl:apply-templates select="sec[@sec-type='supplementary-material'] | notes[@notes-type='supplementary-material']"/>-->
                         <xsl:apply-templates select="front/article-meta/custom-meta-group/custom-meta[@id='data-availability']"/>
                     </back>
@@ -1537,9 +1540,9 @@
                     </xsl:if>
                     
                     <xsl:for-each select="article-meta/pub-date">
-                        <xsl:message>Current: <xsl:value-of select="@pub-type"/></xsl:message>
+<!--                        <xsl:message>Current: <xsl:value-of select="@pub-type"/></xsl:message>-->
                         <xsl:if test="year != '' and year != '0000'">
-                            <xsl:message>Pubdate year: <xsl:value-of select="year"/></xsl:message>
+<!--                            <xsl:message>Pubdate year: <xsl:value-of select="year"/></xsl:message>-->
                             <xsl:apply-templates select="."/>
                         </xsl:if>
                     </xsl:for-each>
@@ -2158,15 +2161,23 @@
         <xsl:apply-templates/>
     </xsl:template>
 
+    <!--
+    TODO: Discussion. Was: <xsl:template match="sec[not(parent::boxed-text)">
+     This is very broad - in that it catches any such section anywhere (e.g. below <body>).
+     Is that the intention?
+     It causes problems below with supplementary-materials extraction.
+     Maybe this is a candidate for kermit2:master? It merits discussion at least since it holds back our fork.
+     -->
     <!-- Macrostructure of main body if the text -->
     <xsl:template match="sec[not(parent::boxed-text)]">
+<!--                <xsl:message>sec[not(parent::boxed-text)] ran: <xsl:value-of select="."/></xsl:message>-->
                 <div>
                     <xsl:if test="@sec-type">
                         <xsl:attribute name="type">
                             <xsl:value-of select="@sec-type"/>
                         </xsl:attribute>
                     </xsl:if>
-                    
+
                     <xsl:if test="parent::boxed-text">
                         <xsl:attribute name="rend">
                             <xsl:text>boxed-text</xsl:text>
@@ -2177,14 +2188,14 @@
                             <xsl:value-of select="@id"/>
                         </xsl:attribute>
                     </xsl:if>
-                    
+
                     <xsl:if test="label">
                         <xsl:attribute name="n">
                             <xsl:value-of select="label"/>
                         </xsl:attribute>
                     </xsl:if>
-                    
-                    <!-- We treat boxed-text as independant divisions right after the current division 
+
+                    <!-- We treat boxed-text as independant divisions right after the current division
             to avoid getting a division within a paragraph by accident -->
                     <xsl:choose>
                         <xsl:when test="not(descendant::sec) and descendant::boxed-text">
@@ -2197,6 +2208,8 @@
                         </xsl:otherwise>
                     </xsl:choose>
                 </div>
+<!--            </xsl:otherwise>-->
+<!--        </xsl:choose>-->
     </xsl:template>
 
     <xsl:template match="sec[parent::boxed-text]">
@@ -2255,7 +2268,7 @@
     <xsl:template match="ack">
         <div type="acknowledgements">
             <div>
-                <xsl:apply-templates/>
+                <xsl:apply-templates />
             </div>
         </div>
     </xsl:template>
@@ -2552,6 +2565,7 @@
             </div>
         </div>
     </xsl:template>
+
     <xsl:template match="back/*/sec[@sec-type='data-availability']">
         <div type="availability">
             <div>
@@ -2700,7 +2714,6 @@
             <xsl:attribute name="type">
                 <xsl:value-of select="@ext-link-type"/>
             </xsl:attribute>
-
             <xsl:attribute name="target">
                 <xsl:variable name="url">
                 <xsl:choose>
@@ -2712,6 +2725,7 @@
                     </xsl:otherwise>
                 </xsl:choose>
                 </xsl:variable>
+<!--                <xsl:message>ext-link type: <xsl:value-of select="@ext-link-type"/>, URL: <xsl:value-of select="$url"/></xsl:message>-->
                 <xsl:value-of select="$url"/>
             </xsl:attribute>
             <xsl:apply-templates/>
@@ -2725,12 +2739,14 @@
     </xsl:template>
 
     <xsl:template match="supplementary-material/p | supplementary-material/label">
+<!--        <xsl:message>Processing supplementary-material/p or .../label</xsl:message>-->
         <p>
             <xsl:value-of select="p"/>
         </p>
     </xsl:template>
 
     <xsl:template match="supplementary-material/caption">
+<!--        <xsl:message>Processing supplementary-material/caption</xsl:message>-->
         <xsl:if test="title">
             <p>
                 <xsl:value-of select="title"/>
@@ -2743,10 +2759,84 @@
         </xsl:if>
     </xsl:template>
 
+    <xsl:template match="supplementary-material[parent::article-meta]">
+<!--        <xsl:message>Processing supplementary-material under article-meta</xsl:message>-->
+        <div type="supplementary-material">
+            <head>Supplementary Material</head>
+            <xsl:if test="@xlink:href">
+                <ref>
+                    <xsl:attribute name="target"><xsl:value-of select="@xlink:href"/></xsl:attribute>
+                    <xsl:if test="@mimetype">
+                        <xsl:attribute name="mimeType"><xsl:value-of select="@mimetype"/></xsl:attribute>
+                    </xsl:if>
+                    <xsl:if test="@xlink:href">
+                        <xsl:attribute name="mimeSubType"><xsl:value-of select="@mime-subtype"/></xsl:attribute>
+                    </xsl:if>
+                </ref>
+                <xsl:if test ="caption">
+                    <xsl:apply-templates select="caption"/>
+                </xsl:if>
+            </xsl:if>
+        </div>
+    </xsl:template>
+
+    <xsl:template match="body/sec/supplementary-material">
+<!--        <xsl:message>Processing body/sec supplementary-material</xsl:message>-->
+        <div type="supplementary-material">
+            <xsl:if test="@id">
+                <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
+            </xsl:if>
+            <p>
+                <s>
+                    <xsl:if test="@xlink:href">
+        <!--                <xsl:message>xlink:href</xsl:message>-->
+                        <ref>
+                            <xsl:attribute name="type"><xsl:value-of />url</xsl:attribute>
+                            <xsl:attribute name="target"><xsl:value-of select="@xlink:href"/></xsl:attribute>
+                            <xsl:if test="@mimetype">
+        <!--                        <xsl:message>mimetype</xsl:message>-->
+                                <xsl:attribute name="mimetype"><xsl:value-of select="@mimetype"/></xsl:attribute>
+                            </xsl:if>
+                        </ref>
+                    </xsl:if>
+                    <xsl:value-of select="."/>
+                </s>
+            </p>
+        </div>
+    </xsl:template>
+
+    <xsl:template match="sub-article/body/supplementary-material">
+        <div type="supplementary-material">
+<!--            <xsl:message>Processing sub-article/body supplementary-material</xsl:message>-->
+            <xsl:if test="@id">
+                <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
+            </xsl:if>
+            <p>
+                <s>
+                    <xsl:if test="@xlink:href">
+        <!--                <xsl:message>xlink:href</xsl:message>-->
+                        <ref>
+                            <xsl:attribute name="type"><xsl:value-of />url</xsl:attribute>
+                            <xsl:attribute name="target"><xsl:value-of select="@xlink:href"/></xsl:attribute>
+                            <xsl:if test="@mimetype">
+        <!--                        <xsl:message>mimetype</xsl:message>-->
+                                <xsl:attribute name="mimetype"><xsl:value-of select="@mimetype"/></xsl:attribute>
+                            </xsl:if>
+                        </ref>
+                    </xsl:if>
+                    <xsl:value-of select="."/>
+                </s>
+            </p>
+        </div>
+    </xsl:template>
+
+
     <xsl:template match="supplementary-material">
+<!--        <xsl:message>Processing generic supplementary-material</xsl:message>-->
         <xsl:variable name="href">
             <xsl:choose>
                 <xsl:when test="@xlink:href">
+<!--                    <xsl:message>Value: <xsl:value-of select="@xlink:href"/></xsl:message>-->
                     <xsl:value-of select="@xlink:href"/>
                 </xsl:when>
                 <xsl:when test="media/@xlink:href">
@@ -2768,9 +2858,18 @@
 
         <xsl:variable name="mimetype" select="@mimetype"/>
 
-        <ref target="{$href}" mimeType="{$mimetype}">
-            <xsl:value-of select="$text"/>
-        </ref>
+        <xsl:choose>
+            <xsl:when test="p/ext-link">
+                <p>
+                    <xsl:apply-templates select="p/ext-link"/>
+                </p>
+            </xsl:when>
+            <xsl:otherwise>
+                <ref target="{$href}" mimeType="{$mimetype}">
+                    <xsl:value-of select="$text"/>
+                </ref>
+            </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates select="caption"/>
     </xsl:template>
 
@@ -2783,11 +2882,18 @@
 <!--        </xsl:apply-templates>-->
 <!--    </xsl:template>-->
 
-    <xsl:template match="sec[@sec-type='supplementary-material'] | notes[@notes-type='supplementary-material']">
-        <div type="supplementary-material">
-            <xsl:apply-templates/>
-        </div>
-    </xsl:template>
+    <!--
+     TODO: Discussion. Why is there such a broad XSLT match as: sec[not(parent::boxed-text)] above?
+      It is an ambiguous rule with the one below. PLoS-XML (at least) puts this below body.
+      So I introduced a restriction on sec[not(parent::boxed-text)] above. Perhaps this is a candidate for
+      kermit2:master?
+     -->
+        <xsl:template priority="2" match="sec[@sec-type='supplementary-material'] | notes[@notes-type='supplementary-material']">
+<!--            <xsl:message>Processing sec-type/note-type supplementary-material</xsl:message>&ndash;&gt;-->
+            <div type="supplementary-material">
+                <xsl:apply-templates/>
+            </div>
+        </xsl:template>
 
 <!--    <xsl:template match="back">-->
 <!--        <xsl:param name="supplementary-content"/>-->
@@ -3055,10 +3161,11 @@
     <xsl:template match="front/article-meta/product">
         <div type="review-of">
             <bibl>
-        <xsl:apply-templates/>
+                <xsl:apply-templates/>
             </bibl>
         </div>
     </xsl:template>
+
     <!-- SG - supplementary information about correction -->
     <xsl:template match="chghst">
         <xsl:apply-templates/>
