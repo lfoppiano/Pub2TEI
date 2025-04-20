@@ -151,8 +151,11 @@
             <!-- enléve les mixed-citation contenant des informations de type abbreviation
             - enléve tout ce qui n'est pas des références pures-->
             <xsl:when test="contains(../@id,'jn')"/>
-           <xsl:when test="element-citation|mixed-citation">
-               <xsl:apply-templates select="element-citation|mixed-citation"/>
+            <xsl:when test="element-citation|mixed-citation">
+                <xsl:apply-templates select="element-citation|mixed-citation"/>
+            </xsl:when>
+            <xsl:when test="citation-alternatives/element-citation|citation-alternatives/mixed-citation">
+                <xsl:apply-templates select="citation-alternatives/element-citation|citation-alternatives/mixed-citation"/>
             </xsl:when>
             <xsl:otherwise>
                 <biblStruct type="article">
@@ -294,7 +297,13 @@
             <xsl:with-param name="entry" select="*[@publication-type='journal']"/>
         </xsl:call-template>
     </xsl:template>
-    
+
+    <xsl:template match="ref[citation-alternatives/element-citation/@publication-type='journal']">
+        <xsl:call-template name="createArticle">
+            <xsl:with-param name="entry" select="*[@publication-type='journal']"/>
+        </xsl:call-template>
+    </xsl:template>
+
     <!-- Reference to a journal article (3.0 style) -->
     <xsl:template match="ref[element-citation/@citation-type='other'] 
         |ref[nlm-citation/@citation-type='other']">
@@ -435,6 +444,8 @@
             <xsl:otherwise>
                 <xsl:apply-templates select="element-citation"/>
                 <xsl:apply-templates select="mixed-citation"/>
+                <xsl:apply-templates select="citation-alternatives/element-citation"/>
+                <xsl:apply-templates select="citation-alternatives/mixed-citation"/>
                 <xsl:if test="citation">
                     <bibl>
                         <xsl:attribute name="type">
@@ -1402,7 +1413,7 @@
         </biblStruct>
     </xsl:template>
     <!-- références -->
-    <xsl:template match="element-citation|mixed-citation">
+    <xsl:template match="element-citation|mixed-citation|citation-alternatives/element-citation|citation-alternatives/mixed-citation">
         <xsl:choose>
             <xsl:when test="contains(../@id,'jn')">
 <!--                <xsl:message>element-citation 1</xsl:message>-->
