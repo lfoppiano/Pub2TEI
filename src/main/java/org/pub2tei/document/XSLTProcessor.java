@@ -199,6 +199,36 @@ public class XSLTProcessor {
         }
     }
 
+    public XdmNode removeDefaultNamespace(XdmNode node) throws SaxonApiException {
+        // Create an XSLT transformer that removes default namespace
+        String xslt =
+            "<xsl:stylesheet version='2.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform'>" +
+                "  <xsl:template match='*'>" +
+                "    <xsl:element name='{local-name()}' namespace=''>" +
+                "      <xsl:copy-of select='@*'/>" +
+                "      <xsl:apply-templates/>" +
+                "    </xsl:element>" +
+                "  </xsl:template>" +
+                "</xsl:stylesheet>";
+
+        XsltCompiler compiler = this.proc.newXsltCompiler();
+        XsltExecutable exec = compiler.compile(new StreamSource(new StringReader(xslt)));
+        XsltTransformer transformer = exec.load();
+
+        Serializer out = this.proc.newSerializer();
+        out.setOutputProperty(Serializer.Property.OMIT_XML_DECLARATION, "yes");
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        out.setOutputStream(baos);
+
+        transformer.setSource(node.asSource());
+        transformer.setDestination(out);
+        transformer.transform();
+
+        // Parse the result back into an XdmNode
+        DocumentBuilder builder = this.proc.newDocumentBuilder();
+        return builder.build(new StreamSource(new StringReader(baos.toString())));
+    }
+
     public String transform(InputStream inputStream) {
         if (inputStream == null)
             return null;
@@ -219,6 +249,7 @@ public class XSLTProcessor {
         StringWriter sw = new StringWriter();
         try {
             XdmNode source = this.proc.newDocumentBuilder().build(new StreamSource(inputStream));
+            source = removeDefaultNamespace(source);
             out.setOutputWriter(sw);
             t.setInitialContextNode(source);
             t.setDestination(out);
