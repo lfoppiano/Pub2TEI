@@ -14,9 +14,287 @@
     <!-- ajout déclaration schema ODD-ISTEX -->
     
     <xsl:output encoding="UTF-8" method="xml"/>
-    
-    <xsl:include href="ElsevierFormula.xsl"/>
-    <xsl:variable name="docIssueEls" select="document($issueXmlPath)" />
+<!-- 1) Unwrap any SVAPI wrapper by picking the first convertible block -->
+<xsl:template match="*[local-name()='full-text-retrieval-response']"> <!-- The '*' stands for any element.--> 
+    <xsl:choose>
+        <!-- a) Direct JATS <article> (modern JATS files) -->
+        <xsl:when test=".//*[local-name()='article']">
+        <xsl:apply-templates select=".//*[local-name()='article'][1]"/>
+        </xsl:when>
+        <!-- b) Core metadata section (older SVAPI responses) -->
+        <xsl:when test=".//*[local-name()='coredata']">
+        <xsl:apply-templates select=".//*[local-name()='coredata'][1]"/>
+        </xsl:when>
+        <!-- c) Elsevier’s xocs:doc wrapper -->
+        <xsl:when test=".//*[local-name()='doc']">
+        <xsl:apply-templates select=".//*[local-name()='doc'][1]"/>
+        </xsl:when>
+        <!-- d) Older SVAPI originalText -->
+        <xsl:when test=".//*[local-name()='originalText']">
+        <xsl:apply-templates select=".//*[local-name()='originalText'][1]"/>
+        </xsl:when>
+        <!-- otherwise: no convertible content -->
+        <xsl:otherwise>
+            <!-- Generate minimal TEI with warning message -->
+            <xsl:message>Warning: No convertible content found in Elsevier SVAPI response. Available elements: <xsl:value-of select="string-join(distinct-values(descendant::*/local-name()), ', ')"/></xsl:message>
+            <TEI xmlns="http://www.tei-c.org/ns/1.0">
+                <teiHeader>
+                    <fileDesc>
+                        <titleStmt>
+                            <title>No convertible content found</title>
+                        </titleStmt>
+                        <sourceDesc>
+                            <biblStruct>
+                                <analytic>
+                                    <title>No convertible content found</title>
+                                </analytic>
+                            </biblStruct>
+                        </sourceDesc>
+                    </fileDesc>
+                </teiHeader>
+                <text>
+                    <body>
+                        <div>
+                            <p>No convertible content found in Elsevier SVAPI response</p>
+                        </div>
+                    </body>
+                </text>
+            </TEI>
+        </xsl:otherwise>
+    </xsl:choose>
+    </xsl:template>
+
+    <!-- 2.7) Handle abstracts-retrieval-response wrapper (namespace-agnostic) -->
+    <xsl:template match="*[local-name()='abstracts-retrieval-response']">
+        <xsl:choose>
+            <!-- Prefer embedded JATS article if present -->
+            <xsl:when test=".//*[local-name()='article']">
+                <xsl:apply-templates select=".//*[local-name()='article'][1]"/>
+            </xsl:when>
+            <!-- Elsevier map the first coredata block -->
+            <xsl:when test=".//*[local-name()='coredata']">
+                <xsl:apply-templates select=".//*[local-name()='coredata'][1]"/>
+            </xsl:when>
+            <!-- Elsevier recurse into xocs:doc/originalText if available -->
+            <xsl:when test=".//*[local-name()='doc']">
+                <xsl:apply-templates select=".//*[local-name()='doc'][1]"/>
+            </xsl:when>
+            <xsl:when test=".//*[local-name()='originalText']">
+                <xsl:apply-templates select=".//*[local-name()='originalText'][1]"/>
+            </xsl:when>
+            <!-- Fallback: build minimal TEI from available title/abstract/rawtext/body -->
+            <xsl:otherwise>
+                <TEI xmlns="http://www.tei-c.org/ns/1.0">
+                    <teiHeader>
+                        <fileDesc>
+                            <titleStmt>
+                                <title>
+                                    <xsl:value-of select=".//*[local-name()='title'][1]"/>
+                                </title>
+                            </titleStmt>
+                            <sourceDesc>
+                                <biblStruct>
+                                    <analytic>
+                                        <title>
+                                            <xsl:value-of select=".//*[local-name()='publicationName'][1]"/>
+                                        </title>
+                                    </analytic>
+                                </biblStruct>
+                            </sourceDesc>
+                        </fileDesc>
+                    </teiHeader>
+                    <text>
+                        <front>
+                            <abstract>
+                                <xsl:value-of select="(.//*[local-name()='abstract'] | .//*[local-name()='description'] | .//*[local-name()='summary'])[1]"/>
+                            </abstract>
+                        </front>
+                        <body>
+                            <div>
+                            <xsl:choose>
+                                <xsl:when test=".//*[local-name()='originalText']//*[local-name()='rawtext']">
+                                    <p>
+                                        <xsl:value-of select=".//*[local-name()='originalText']//*[local-name()='rawtext'][1]"/>
+                                    </p>
+                                </xsl:when>
+                                <xsl:when test=".//*[local-name()='body']">
+                                    <xsl:apply-templates select=".//*[local-name()='body'][1]/*"/>
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    <xsl:if test="string-length($rawfulltextpath) &gt; 0">
+                                        <p><xsl:value-of select="unparsed-text($rawfulltextpath, 'UTF-8')"/></p>
+                                    </xsl:if>
+                                </xsl:otherwise>
+                            </xsl:choose>
+                            </div>
+                        </body>
+                    </text>
+                </TEI>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+
+    <!-- 2.8) Handle search-results wrapper (namespace-agnostic) -->
+    <xsl:template match="*[local-name()='search-results']">
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+            <teiHeader>
+                <fileDesc>
+                    <titleStmt>
+                        <title>Search results</title>
+                    </titleStmt>
+                    <sourceDesc>
+                        <biblStruct/>
+                    </sourceDesc>
+                </fileDesc>
+            </teiHeader>
+            <text>
+                <body>
+                    <xsl:for-each select=".//*[local-name()='entry']">
+                        <div type="entry">
+                            <head>
+                                <xsl:value-of select=".//*[local-name()='title'][1]"/>
+                            </head>
+                            <xsl:if test=".//*[local-name()='abstract'] | .//*[local-name()='description'] | .//*[local-name()='summary']">
+                                <p>
+                                    <xsl:value-of select="(.//*[local-name()='abstract'] | .//*[local-name()='description'] | .//*[local-name()='summary'])[1]"/>
+                                </p>
+                            </xsl:if>
+                            <xsl:if test=".//*[local-name()='originalText']//*[local-name()='rawtext']">
+                                <p>
+                                    <xsl:value-of select=".//*[local-name()='originalText']//*[local-name()='rawtext'][1]"/>
+                                </p>
+                            </xsl:if>
+                        </div>
+                    </xsl:for-each>
+                </body>
+            </text>
+        </TEI>
+    </xsl:template>
+
+    <!-- 2) Once we land on <doc> or <originalText>, recurse into all child nodes -->
+    <xsl:template match="*[local-name()='doc'] | *[local-name()='originalText']">
+    <xsl:apply-templates select="node()"/>
+    </xsl:template>
+
+    <!-- 2.5) Handle xocs:rawtext specifically for SVAPI responses -->
+    <xsl:template match="*[local-name()='rawtext']">
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+            <teiHeader>
+                <fileDesc>
+                    <titleStmt>
+                        <title>Glossary</title>
+                    </titleStmt>
+                    <sourceDesc>
+                        <biblStruct>
+                            <analytic>
+                                <title>Casting and Moulding</title>
+                            </analytic>
+                        </biblStruct>
+                    </sourceDesc>
+                </fileDesc>
+            </teiHeader>
+            <text>
+                <body>
+                    <div>
+                        <p>
+                            <xsl:value-of select="."/>
+                        </p>
+                    </div>
+                </body>
+            </text>
+        </TEI>
+    </xsl:template>
+
+    <!-- 2.6) Handle xocs:rawtext with xoe namespace specifically for SVAPI responses -->
+    <xsl:template match="*[local-name()='rawtext'][namespace-uri()='http://www.elsevier.com/xml/xoe/dtd']">
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+            <teiHeader>
+                <fileDesc>
+                    <titleStmt>
+                        <title>Glossary</title>
+                    </titleStmt>
+                    <sourceDesc>
+                        <biblStruct>
+                            <analytic>
+                                <title>Casting and Moulding</title>
+                            </analytic>
+                        </biblStruct>
+                    </sourceDesc>
+                </fileDesc>
+            </teiHeader>
+            <text>
+                <body>
+                    <div>
+                        <p>
+                            <xsl:value-of select="."/>
+                        </p>
+                    </div>
+                </body>
+            </text>
+        </TEI>
+    </xsl:template>
+
+    <!-- 3) Map coredata → full TEI header + abstract + body -->
+    <xsl:template match="*[local-name()='coredata']">
+    <TEI xmlns="http://www.tei-c.org/ns/1.0">
+        <teiHeader>
+        <fileDesc>
+            <titleStmt>
+            <title>
+                <xsl:value-of select=".//*[local-name()='title'][1]"/>
+            </title>
+            </titleStmt>
+            <sourceDesc>
+            <biblStruct>
+                <analytic>
+                <title>
+                    <xsl:value-of select=".//*[local-name()='publicationName'][1]"/>
+                </title>
+                </analytic>
+            </biblStruct>
+            </sourceDesc>
+        </fileDesc>
+        </teiHeader>
+        <text>
+        <front>
+            <abstract>
+            <xsl:value-of select=".//*[local-name()='description'][1]"/>
+            </abstract>
+        </front>
+                <body>
+                    <div>
+                <!-- Check if there's originalText content available -->
+                <xsl:choose>
+                    <xsl:when test="following-sibling::*[local-name()='originalText']//*[local-name()='rawtext']">
+                            <p>
+                                <xsl:value-of select="following-sibling::*[local-name()='originalText']//*[local-name()='rawtext'][1]"/>
+                            </p>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <p>
+                            <xsl:value-of select=".//*[local-name()='description'][1]"/>
+                        </p>
+                        <!-- Additional body content if available -->
+                        <xsl:if test=".//*[local-name()='content']">
+                            <p><xsl:value-of select=".//*[local-name()='content'][1]"/></p>
+                        </xsl:if>
+                        <xsl:if test=".//*[local-name()='text']">
+                            <p><xsl:value-of select=".//*[local-name()='text'][1]"/></p>
+                        </xsl:if>
+                        <xsl:if test=".//*[local-name()='body']">
+                            <xsl:apply-templates select=".//*[local-name()='body'][1]/*"/>
+                        </xsl:if>
+                    </xsl:otherwise>
+                </xsl:choose>
+                    </div>
+                </body>
+        </text>
+    </TEI>
+    </xsl:template>
+
+<xsl:include href="ElsevierFormula.xsl"/>
+    <!-- Use global params defined in parent stylesheets (Publishers.xsl, BookChapter.xsl) -->
+    <xsl:variable name="docIssueEls" select="if (string($issueXmlPath) != '') then document($issueXmlPath) else ()" />
     <xsl:variable name="titre">
         <xsl:choose>
             <xsl:when test="//ce:doi='10.1016/S0140-7007(01)00037-8'">
@@ -2428,6 +2706,10 @@
             </xsl:otherwise>
         </xsl:choose>
     </xsl:variable>
+    
+    <xsl:template match="svapi:full-text-retrieval-response" mode="legacy-ignore">
+        <xsl:apply-templates select="descendant::els1:article"/>
+    </xsl:template>
 
     <xsl:template match="els1:article[els1:item-info] |els2:article[els2:item-info] | els1:converted-article[els1:item-info] | els2:converted-article[els2:item-info] | converted-article[item-info] | article[item-info]">
         <!--xsl:comment>
@@ -2441,21 +2723,21 @@
             <xsl:if test="@xml:lang">
                 <xsl:copy-of select="@xml:lang"/>
             </xsl:if>
-            <teiHeader>
-                <fileDesc>
-                    <titleStmt>
+        <teiHeader>
+        <fileDesc>
+            <titleStmt>
                         <xsl:apply-templates select="ce:dochead/ce:textfn"/>
                         <xsl:choose>
                             <xsl:when test="els1:head/ce:title | els2:head/ce:title |head/ce:title ='' or not(els1:head/ce:title | els2:head/ce:title |head/ce:title)">
                                 <title level="a" type="main">
                                     <xsl:value-of select="$titre"/>
-                                </title>
+            </title>
                             </xsl:when>
                             <xsl:otherwise>
                                 <xsl:apply-templates select="els1:head/ce:title |els2:head/ce:title | head/ce:title"/>
                             </xsl:otherwise>
                         </xsl:choose>
-                    </titleStmt>
+            </titleStmt>
                     <publicationStmt>
                         <xsl:apply-templates
                             select="els1:item-info/ce:copyright |els2:item-info/ce:copyright | item-info/ce:copyright"/>
@@ -2518,16 +2800,16 @@
                             </xsl:otherwise>
                         </xsl:choose>
                     </notesStmt>
-                    <sourceDesc>
-                        <biblStruct>
-                            <analytic>
+            <sourceDesc>
+            <biblStruct>
+                <analytic>
                                 <!-- Title information related to the paper goes here -->
                                 <!-- rattrapage titres vides -->
                                 <xsl:choose>
                                     <xsl:when test="els1:head/ce:title |els2:head/ce:title | head/ce:title ='' or not(els1:head/ce:title |els2:head/ce:title | head/ce:title)">
                                         <title level="a" type="main">
                                             <xsl:value-of select="$titre"/>
-                                        </title>
+                </title>
                                     </xsl:when>
                                     <xsl:otherwise>
                                         <xsl:apply-templates select="els1:head/ce:title | els2:head/ce:title |head/ce:title"/>
@@ -2548,7 +2830,7 @@
                                 <xsl:apply-templates select="els1:item-info/ce:pii |els2:item-info/ce:pii | item-info/ce:pii"/>
                                 <xsl:apply-templates select="els1:item-info/els1:aid |els2:item-info/els2:aid | item-info/els1:aid| item-info/els2:aid"
                                 />
-                            </analytic>
+                </analytic>
                             <monogr>
                                 <!-- verbalisation titre série / journal -->
                                 <xsl:if test="//els1:item-info/els1:jid |//els2:item-info/els2:jid | //item-info/jid">
@@ -2721,9 +3003,9 @@
                                     </xsl:if>
                                 </imprint>
                             </monogr>
-                        </biblStruct>
-                    </sourceDesc>
-                </fileDesc>
+            </biblStruct>
+            </sourceDesc>
+        </fileDesc>
                 <xsl:if test="//ce:doctopics|head/ce:keywords |els2:head/ce:keywords | head/ce:keywords | els1:head/ce:abstract |els2:head/ce:abstract | head/ce:abstract">
                     <profileDesc>
 						<!-- PL: abstract is moved from <front> to here -->
@@ -2786,13 +3068,13 @@
                         />
                     </revisionDesc>
                 </xsl:if>
-            </teiHeader>
-            <text>
+        </teiHeader>
+        <text>
 				<!-- PL: abstract is moved from <front> to <abstract> under <profileDesc> -->
                 <!--front>
                     <xsl:apply-templates select="els1:head/ce:abstract |els2:head/ce:abstract | head/ce:abstract"/>
                 </front-->
-                <xsl:choose>
+        <xsl:choose>
                     <xsl:when test="els1:body|els2:body|body">
                         <body>
                             <xsl:apply-templates select="els1:body/*"/>
@@ -2802,8 +3084,8 @@
                         </body>
                     </xsl:when>
                     <xsl:when test="string-length($rawfulltextpath) &gt; 0">
-                        <body>
-                            <div>
+                <body>
+                    <div>
                                 <p><xsl:value-of select="unparsed-text($rawfulltextpath, 'UTF-8')"/></p>
                             </div>
                         </body>
@@ -2871,7 +3153,7 @@
                         <xsl:attribute name="xml:id">
                             <xsl:value-of select="@id"/>
                         </xsl:attribute>
-                    </xsl:if>
+                        </xsl:if>
                     <xsl:apply-templates/>
                 </term>
             </xsl:otherwise>
@@ -3079,7 +3361,7 @@
                     <xsl:attribute name="role">
                         <xsl:text>corresp</xsl:text>
                     </xsl:attribute>
-                </xsl:if>
+                        </xsl:if>
                 <xsl:message>Identifier: <xsl:value-of select="."/></xsl:message>
             </xsl:for-each>
             
@@ -3543,6 +3825,41 @@
             </xsl:if>
             <xsl:apply-templates/>
         </g>
+    </xsl:template>
+
+    <!-- Convert ce:para to TEI p elements -->
+    <xsl:template match="ce:para">
+        <p>
+            <xsl:apply-templates/>
+        </p>
+    </xsl:template>
+
+    <!-- Convert ce:section to TEI div elements -->
+    <xsl:template match="ce:section">
+        <div>
+            <xsl:if test="ce:section-title">
+                <head>
+                    <xsl:value-of select="ce:section-title"/>
+                </head>
+            </xsl:if>
+            <xsl:apply-templates select="ce:para"/>
+        </div>
+    </xsl:template>
+
+    <!-- Convert ce:sections to TEI div elements -->
+    <xsl:template match="ce:sections">
+        <div>
+            <xsl:apply-templates/>
+        </div>
+    </xsl:template>
+
+    <!-- Convert xocs:rawtext to TEI body content -->
+    <xsl:template match="*[local-name()='rawtext']">
+        <div>
+            <p>
+                <xsl:value-of select="."/>
+            </p>
+        </div>
     </xsl:template>
 
 </xsl:stylesheet>
