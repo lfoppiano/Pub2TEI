@@ -41,7 +41,6 @@ public class XMLUtilitiesIntegrationTest {
         GrobidProperties.getInstance(finder);
     }
 
-    @Ignore("To fix")
     @Test
     public void testSegment_chunk_shouldInjectSegmentCorrectly() throws Exception {
         String input = "<div type=\"acknowledgement\">" +

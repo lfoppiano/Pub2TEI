@@ -240,6 +240,11 @@ public class XMLUtilities {
                 for(int y=0; y<childNodes.getLength(); y++) {
                     Node item = childNodes.item(y);
                     String serializedString = serialize(doc, item);
+                    // Strip trailing newlines injected by the indenting Transformer.
+                    // Only strip '\n', NOT spaces: text nodes may have meaningful trailing spaces.
+                    while (serializedString != null && serializedString.endsWith("\n")) {
+                        serializedString = serializedString.substring(0, serializedString.length() - 1);
+                    }
                     if (y > 0 && StringUtils.isNotEmpty(serializedString)) {
                         String firstChar = "" + serializedString.charAt(0);
                         //We might need to use TextUtilities.fullPunctuation
@@ -269,14 +274,18 @@ public class XMLUtilities {
                     int nextStart = (si + 1 < theSentenceBoundaries.size())
                             ? theSentenceBoundaries.get(si + 1).start : text.length();
                     if (pos.end < nextStart) {
-                        boolean allSpaces = true;
+                        boolean allSpacesInClean = true;
+                        boolean hasRefReplacement = false;
                         for (int ci = pos.end; ci < nextStart; ci++) {
                             if (cleanText.charAt(ci) != ' ') {
-                                allSpaces = false;
+                                allSpacesInClean = false;
                                 break;
                             }
+                            if (text.charAt(ci) != ' ') {
+                                hasRefReplacement = true;
+                            }
                         }
-                        if (allSpaces) {
+                        if (allSpacesInClean && hasRefReplacement) {
                             pos.end = nextStart;
                         }
                     }
