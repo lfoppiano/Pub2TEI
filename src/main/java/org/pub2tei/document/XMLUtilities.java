@@ -242,7 +242,10 @@ public class XMLUtilities {
                     String serializedString = serialize(doc, item);
                     // Strip trailing newlines injected by the indenting Transformer.
                     // Only strip '\n', NOT spaces: text nodes may have meaningful trailing spaces.
-                    while (serializedString != null && serializedString.endsWith("\n")) {
+                    if (serializedString == null) {
+                        serializedString = "";
+                    }
+                    while (serializedString.endsWith("\n")) {
                         serializedString = serializedString.substring(0, serializedString.length() - 1);
                     }
                     if (y > 0 && StringUtils.isNotEmpty(serializedString)) {
